@@ -9,6 +9,7 @@ function RotX(θ)
      0  sin(θ)  cos(θ)]
 end
 
+include("cart_pole.jl")
 include("cart_triple_pendulum.jl")
 
 
