@@ -10,14 +10,13 @@ function dynamics(model::CartPole, x::Vector{<:Real}, u::Real)
 
     m0, m, ℓ, g = model.m0, model.m, model.ℓ, 9.81
 
+    M = [m+m0  m*ℓ*cos(θ); m*ℓ*cos(θ) m*ℓ^2]
+    f = [m*ℓ*θ̇^2*sin(θ) + u; -m*g*ℓ*sin(θ)]
     if model.input == :acceleration
-        s̈ = u
-        θ̈ = (-g * sin(θ) - s̈ * cos(θ)) / ℓ
-    else
-        A = [m+m0  m*ℓ*cos(θ); m*ℓ*cos(θ) m*ℓ^2]
-        b = [m*ℓ*θ̇^2*sin(θ) + u; -m*g*ℓ*sin(θ)]
-        s̈, θ̈ = A \ b
+        M[1,:] = [1,0]
+        f[1] = u
     end
+    s̈, θ̈ = M \ f
 
     return [ṡ; θ̇; s̈; θ̈]
 end

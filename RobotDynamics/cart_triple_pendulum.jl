@@ -38,24 +38,24 @@ CartTriplePendulum(;m0=0, m1=1,m2=1,m3=1, ℓ1=.5,ℓ2=.5,ℓ3=.6, a1=.25,a2=.25
 CartTriplePendulum(ℓ1, ℓ2, ℓ3; m0=0, d1=0, d2=0, d3=0, input=:force) = CartTriplePendulum(m0, ℓ1*12,ℓ2*12,ℓ3*12, ℓ1,ℓ2,ℓ3, ℓ1/2,ℓ2/2,ℓ3/2, ℓ1^3,ℓ2^3,ℓ3^3, d1,d2,d3, input)
 
 function dynamics(model::CartTriplePendulum, x::Vector{<:Real}, u::Real)
-    s = x[1]
-    θ = x[2:4]
-    ṡ = x[5]
-    θ̇ = x[6:8]
-    g = 9.81
+    q, q̇ = x[1:4], x[5:8]
+    s, θ = q[1], q[2:4]
+    ṡ, θ̇ = q̇[1], q̇[2:4]
 
-    C1, C2, D = model.C1, model.C2, model.D
+    C1, C2, D, g = model.C1, model.C2, model.D, 9.81
 
     Δθ = [θ[i]-θ[j] for i=1:3, j=1:3]
 
+    m_total = model.m0 + model.m1 + model.m2 + model.m3
+    M = [m_total  (C2 .* cos.(θ))';  C2 .* cos.(θ)  C1 .* cos.(Δθ)]
+    f = [1,0,0,0] * u - [(-C2 .* sin.(θ))';  C1 .* sin.(Δθ)] * θ̇.^2 - [zeros(3)';  D] * θ̇ - [0;  C2 .* sin.(θ) * g]
     if model.input == :acceleration
-        s̈ = u
-    else
-        s̈ = (u + (C2 .* sin.(θ))' * (θ̇.^2)) / (model.m0+model.m1+model.m2+model.m3)
+        M[1,:] = [1,0,0,0]
+        f[1] = u
     end
+    q̈ = M \ f
 
-    θ̈ = -(C1 .* cos.(Δθ)) \ (C2 .* cos.(θ) * s̈ + (C1 .* sin.(Δθ)) * θ̇.^2 + D * θ̇ + C2 .* sin.(θ) * g)
-    return [ṡ; θ̇; s̈; θ̈]
+    return [q̇; q̈]
 end
 
 function set_mesh!(vis::mc.Visualizer, model::CartTriplePendulum)
