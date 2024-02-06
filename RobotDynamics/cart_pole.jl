@@ -5,20 +5,20 @@ Base.@kwdef struct CartPole <: ContinuousDynamicsModel
     input::Symbol = :force
 end
 
-function dynamics(model::CartPole, x::Vector{<:Real}, u::Real)
+function dynamics(model::CartPole, x::SVector{4,<:Real}, u::SVector{1,<:Real})::SVector{4,<:Real}
     s, θ, ṡ, θ̇ = x
 
     m0, m, ℓ, g = model.m0, model.m, model.ℓ, 9.81
 
     M = [m+m0  m*ℓ*cos(θ); m*ℓ*cos(θ) m*ℓ^2]
-    f = [m*ℓ*θ̇^2*sin(θ) + u; -m*g*ℓ*sin(θ)]
+    f = [m*ℓ*θ̇^2*sin(θ) + u[1]; -m*g*ℓ*sin(θ)]
     if model.input == :acceleration
         M[1,:] = [1,0]
-        f[1] = u
+        f[1] = u[1]
     end
     s̈, θ̈ = M \ f
 
-    return [ṡ; θ̇; s̈; θ̈]
+    return @SVector[ṡ; θ̇; s̈; θ̈]
 end
 
 function set_mesh!(vis::mc.Visualizer, model::CartPole)
@@ -41,11 +41,11 @@ function set_mesh!(vis::mc.Visualizer, model::CartPole)
     mc.setprop!(vis["/Grid"], "visible", false)
     mc.setprop!(vis["/Axes"], "visible", false)
 
-    visualize!(vis, model, [0,0])
+    visualize!(vis, model, @SVector[0.,0,0,0])
 end
 
-function visualize!(vis::mc.Visualizer, model::CartPole, x::Vector)
-    s, θ = x
+function visualize!(vis::mc.Visualizer, model::CartPole, x::SVector{4,<:Real})
+    s, θ = x[1], x[2]
 
     y = s
     z = 0.

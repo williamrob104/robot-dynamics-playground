@@ -37,7 +37,7 @@ CartTriplePendulum(;m0=0, m1=1,m2=1,m3=1, ℓ1=.5,ℓ2=.5,ℓ3=.6, a1=.25,a2=.25
 
 CartTriplePendulum(ℓ1, ℓ2, ℓ3; m0=0, d1=0, d2=0, d3=0, input=:force) = CartTriplePendulum(m0, ℓ1*12,ℓ2*12,ℓ3*12, ℓ1,ℓ2,ℓ3, ℓ1/2,ℓ2/2,ℓ3/2, ℓ1^3,ℓ2^3,ℓ3^3, d1,d2,d3, input)
 
-function dynamics(model::CartTriplePendulum, x::Vector{<:Real}, u::Real)
+function dynamics(model::CartTriplePendulum, x::SVector{8,<:Real}, u::SVector{1,<:Real})::SVector{8,<:Real}
     q, q̇ = x[1:4], x[5:8]
     s, θ = q[1], q[2:4]
     ṡ, θ̇ = q̇[1], q̇[2:4]
@@ -48,14 +48,14 @@ function dynamics(model::CartTriplePendulum, x::Vector{<:Real}, u::Real)
 
     m_total = model.m0 + model.m1 + model.m2 + model.m3
     M = [m_total  (C2 .* cos.(θ))';  C2 .* cos.(θ)  C1 .* cos.(Δθ)]
-    f = [1,0,0,0] * u - [(-C2 .* sin.(θ))';  C1 .* sin.(Δθ)] * θ̇.^2 - [zeros(3)';  D] * θ̇ - [0;  C2 .* sin.(θ) * g]
+    f = [1,0,0,0] * u[1] - [(-C2 .* sin.(θ))';  C1 .* sin.(Δθ)] * θ̇.^2 - [zeros(3)';  D] * θ̇ - [0;  C2 .* sin.(θ) * g]
     if model.input == :acceleration
         M[1,:] = [1,0,0,0]
-        f[1] = u
+        f[1] = u[1]
     end
     q̈ = M \ f
 
-    return [q̇; q̈]
+    return SVector{8}([q̇; q̈])
 end
 
 function set_mesh!(vis::mc.Visualizer, model::CartTriplePendulum)
@@ -79,15 +79,15 @@ function set_mesh!(vis::mc.Visualizer, model::CartTriplePendulum)
         mc.setobject!(vis[:cart_triple_pendulum]["link$i"][:body], body,  mat[i])
         mc.setobject!(vis[:cart_triple_pendulum]["link$i"][:tail], hinge, mat[i])
     end
-    visualize!(vis, model, [0,0,0,0])
+    visualize!(vis, model, zeros(SVector{8}))
 
     mc.setprop!(vis["/Grid"], "visible", false)
     mc.setprop!(vis["/Axes"], "visible", false)
 end
 
-function visualize!(vis::mc.Visualizer, model::CartTriplePendulum, x::Vector)
+function visualize!(vis::mc.Visualizer, model::CartTriplePendulum, x::SVector{8,<:Real})
     s = x[1]
-    θ = x[2:4]
+    θ = [x[2], x[3], x[4]]
 
     y = s
     z = 0.
